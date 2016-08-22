@@ -10,7 +10,7 @@ class MyController extends Controller {
     var s= new SumOfDigit();
     var value=s.addInt(num1, num2);
     println(value.toString());
-    Ok("value is abc  "+ value.toString());
+    Ok(value.toString());
   }
     
   
