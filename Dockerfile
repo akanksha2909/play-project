@@ -7,5 +7,5 @@ COPY . /usr/src/app
 
 CMD ['activator', 'run']
 
-EXPOSE 8086:9000
+EXPOSE 9000
 
