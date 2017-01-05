@@ -1,4 +1,4 @@
-FROM ingensi\play-framework:latest
+FROM ingensi/play-framework:latest
 
 RUN yum install git && yum install ca-certificates
 RUN mkdir /usr/src/app
