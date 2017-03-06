@@ -1,0 +1,72 @@
+//**** Jenkins file auto-generated via CICD Dashboard . Please do not change manually ******** //
+def BRANCH_NAME=${env.BRANCH_NAME}
+node{ 
+env.PROJECT="OmniChannel"
+env.NODE_OR_PLAY="NODE"
+env.BRANCH_NAME="${env.BRANCH_NAME}"
+env.BUILD_NUMBER="${env.BUILD_NUMBER}"
+env.GIT_URL="http://stash.directv.com:8080/scm/omni/omni-ppv-web.git"
+env.BUILD_TAG="omni"
+env.APPNAME="oppv"
+env.SKIP_VERIFY="true"
+env.UNSTABLE="true"
+env.ENVIRONMENT="https://oppv-dev-container.dpdlabs.directv.com"
+env.env_name="dev"
+env.NODEVERSION="4.4.3"
+env.DOCKER_NEXUS_URL="zlp11313.vci.att.com:5100"
+env.k8s_node_name="node"
+env.k8s_nginx_name="nginx"
+env.CONTEXT="d1"
+env.node_replicas="1"
+env.nginx_replicas="1"
+env.node_request_memory="1.2Gi"
+env.node_request_cpu="1"
+env.node_limit_memory="2Gi"
+env.node_limit_cpu="2"
+env.nginx_request_memory="250Mi"
+env.nginx_request_cpu="0.5"
+env.nginx_limit_memory="260Mi"
+env.nginx_limit_cpu="1"
+env.docker_repo="com.att.omni.oppv	"
+env.nexus_host="http://10.1.16.140:8881/nexus/content/repositories/NPMReleases/"
+env.NEXUS_APPNAME="oppv-node"
+
+
+	// **** CI/CD Variables/Code Change Carefully ****
+	env.WORKSPACE=pwd()
+	env.sonarAnalysisMode="incremental"
+	env.sonarJdbcUrl="jdbc:postgresql://d3inlp03.directv.com:5432/sonar"
+	env.sonarHostUrl="http://d3inlp03.directv.com:9000/"
+	env.sonarSources="."
+	env.sonarExclusions="/target/*****,/target/*****/***,/testResults/*****,/testResults/*****/***,/lib/*****,/lib/*****/***,/node_modules/*****,/node_modules/*****/***"
+	env.dependencyDir="."
+	TimeZone.setDefault(TimeZone.getTimeZone('IST'))
+	def now = new Date()
+	env.BUILD_TIMESTAMP=now
+	env.startTime=System.currentTimeMillis()
+
+
+	sh 'rm -rf $WORKSPACE/*'
+
+	configFileProvider([configFile(fileId: 'Kube-config', targetLocation: "$WORKSPACE/.kube/config")]) {
+	
+	checkout([$class: 'GitSCM', branches: [[name: BRANCH_NAME]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'ssh://git@stash.directv.com:7999/omni/omni-ppv-web.git']]])
+	//checkout([$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'ssh://git@stash.directv.com:7999/omni/omni-ppv-web.git']]])
+	
+	checkout([$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'docker-deployment']], submoduleCfg: [], userRemoteConfigs: [[url: 'ssh://git@stash.directv.com:7999/dtvdoc/docker-deployment.git']]])
+
+	checkout scm
+	sh 'git rev-parse HEAD > git_commit'
+	   env.GIT_COMMIT = readFile('git_commit').trim()
+     
+	 checkout([$class: 'GitSCM', branches: [[name: '*/cri/oppvdocker']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'workflow-libraries']], submoduleCfg: [], userRemoteConfigs: [[url: 'ssh://git@stash.directv.com:7999/wor/workflow-libraries.git']]])
+	//checkout([$class: 'GitSCM', branches: [[name: '*/cri/oppvdocker']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'workflow-libraries']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'fd85f54e-47c5-4ba4-b370-8543d1fb314d', url: 'http://stash.directv.com:8080/scm/wor/workflow-libraries.git']]])
+
+	def branchURL=load 'workflow-libraries/BranchURL.groovy'
+	branchURL.Branch_URL()
+	env.BRANCH_URL = readFile('branch_url.txt').trim()
+
+	def obj=load 'workflow-libraries/DTVENodePipeline.groovy'
+	obj.build()
+	}
+	}
